@@ -1,5 +1,5 @@
 # The-Impossible-Library
-This is the 1.16.5 branch
+This is the 1.17.1 for fabric branch
 
 This mod was made to offer mod devs methods for doing things that are typically thought of as impossible, hacky, tedious, or maybe even require a 3rd party java library.
 
