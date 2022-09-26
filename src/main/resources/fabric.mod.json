@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "theimpossiblelibrary",
+  "version": "${version}",
+
+  "name": "The Impossible Library Fabric",
+  "description": "Makes the impossible possible",
+  "authors": [
+    "Mysticpasta1"
+  ],
+  "contact": {
+    "homepage": "",
+    "sources": ""
+  },
+
+  "license": "MIT",
+  "icon": "assets/theimpossiblelibrary/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "mods.thecomputerizer.theimpossiblelibrary.TheImpossibleLibrary"
+    ],
+    "client": [
+      "mods.thecomputerizer.theimpossiblelibrary.TheImpossibleLibraryClient"
+    ]
+  },
+  "mixins": [
+    "theimpossiblelibrary.mixin.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.11.3",
+    "fabric": "*",
+    "minecraft": "1.17.x"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}

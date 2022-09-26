@@ -1,142 +1,101 @@
-//file:noinspection GroovyUnusedAssignment
-
-buildscript {
-    repositories {
-        maven { url = "http://maven.minecraftforge.net/" }
-        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
-        mavenCentral()
-        gradlePluginPortal()
-    }
-    dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:4.1.10'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:6.1.0'
-        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
-    }
+plugins {
+            id 'fabric-loom' version '0.7-SNAPSHOT'
+            id 'maven-publish'
 }
 
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'org.spongepowered.mixin'
-apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'maven-publish'
+sourceCompatibility = JavaVersion.VERSION_16
+targetCompatibility = JavaVersion.VERSION_16
 
-version = '1.12.2-0.4'
+version = '1.17.1-0.1'
 group = 'mods.thecomputerizer.theimpossiblelibrary'
 archivesBaseName = 'theimpossiblelibrary'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-minecraft {
-    mappings channel: 'snapshot', version: '20171003-1.12'
-    accessTransformer = file('src/main/resources/META-INF/theimpossiblelibrary_at.cfg')
-    runs {
-        client {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-            property 'forge.logging.console.level', 'debug'
-        }
-
-        server {
-            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
-            property 'forge.logging.console.level', 'debug'
-        }
+repositories {
+    flatDir {
+        dirs 'libs'
     }
 }
 
 repositories {
-    google()
+    maven { url 'https://jitpack.io' }
+    maven { url = "https://s01.oss.sonatype.org/content/repositories/snapshots" }
     mavenCentral()
-    maven {
-        url = uri("https://www.cursemaven.com")
-        content {
-            includeGroup "curse.maven"
-        }
-    }
-    maven {
-        url = uri("https://m2.dv8tion.net/releases")
-    }
-}
-
-sourceSets.main.resources { srcDir 'src/generated/resources' }
-
-sourceSets {
-    main {
-        ext.refMap = "mixins.theimpossiblelibrary.refmap.json"
-    }
-}
-
-configurations {
-    embed
-    compile.extendsFrom(embed)
-    shade
-    implementation.extendsFrom(shade)
-    shadow.extendsFrom shade
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
+    // To change the versions see the gradle.properties file
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    //external dependencies
-    shade("com.sksamuel.scrimage:scrimage-core:4.0.31")
-    shade("com.github.zakgof:velvet-video:0.5.2")
-    shade("com.github.zakgof:velvet-video-natives:0.2.8.full")
+    // Fabric API. This is technically optional, but you probably want it anyway.
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    //mixin
-    implementation fg.deobf("curse.maven:mixin-booter-419286:3886235")
-    implementation('org.spongepowered:mixin:0.8.4')
+    implementation "com.sksamuel.scrimage:scrimage-core:4.0.31"
+    implementation 'com.github.zakgof:velvet-video:0.5.2'
+    implementation 'com.github.zakgof:velvet-video-natives:0.2.8.full'
+    include "com.sksamuel.scrimage:scrimage-core:4.0.31"
+    include 'com.github.zakgof:velvet-video:0.5.2'
+    include 'com.github.zakgof:velvet-video-natives:0.2.8.full'
+
 }
 
-shadowJar {
-    configurations = [project.configurations.shadow]
-    classifier ''
-}
-
-reobf {
-    shadowJar {
-        dependsOn createMcpToSrg
-        mappings = createMcpToSrg.output
-    }
-}
 processResources {
-    filesMatching("mcmod.info") {
-        expand "version": project.version, "mcversion": "1.12.2"
-    }
-
     inputs.property "version", project.version
-    inputs.property "mcversion", "1.12.2"
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
 }
 
-mixin {
-    disableAnnotationProcessorCheck()
+tasks.withType(JavaCompile).configureEach {
+    // ensure that the encoding is set to UTF-8, no matter what the system default is
+    // this fixes some edge cases with special characters not displaying correctly
+    // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
+    // If Javadoc is generated, this must be specified in that task too.
+    it.options.encoding = "UTF-8"
+
+    // The Minecraft launcher currently installs Java 8 for users, so your mod probably wants to target Java 8 too
+    // JDK 9 introduced a new way of specifying this that will make sure no newer classes or methods are used.
+    // We'll use that if it's available, but otherwise we'll use the older option.
+    def targetVersion = 8
+    if (JavaVersion.current().isJava9Compatible()) {
+        it.options.release = targetVersion
+    }
+}
+
+java {
+    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+    // if it is present.
+    // If you remove this line, sources will not be generated.
+    withSourcesJar()
 }
 
 jar {
-    manifest {
-        attributes([
-            "FMLAT": "theimpossiblelibrary_at.cfg",
-            "Specification-Title": "theimpossiblelibrary",
-            "Specification-Vendor": "the_computerizer",
-            "Specification-Version": "1.12.2-0.4",
-            "Implementation-Title": project.name,
-            "Implementation-Version": "1.12.2-0.4",
-            "Implementation-Vendor" :"the_computerizer",
-            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        ])
+    from("LICENSE") {
+        rename { "${it}_${project.archivesBaseName}"}
     }
 }
 
-jar.finalizedBy('reobfJar')
-
+// configure the maven publication
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifact jar
+            // add all the jars that should be included when publishing to maven
+            artifact(remapJar) {
+                builtBy remapJar
+            }
+            artifact(sourcesJar) {
+                builtBy remapSourcesJar
+            }
         }
     }
+
+    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
     repositories {
-        maven {
-            url "file:///${project.projectDir}/mcmodsrepo"
-        }
+        // Add repositories to publish to here.
+        // Notice: This block does NOT have the same function as the block in the top level.
+        // The repositories here will be used for publishing your artifact, not for
+        // retrieving dependencies.
     }
 }
-tasks.assemble.dependsOn shadowJar

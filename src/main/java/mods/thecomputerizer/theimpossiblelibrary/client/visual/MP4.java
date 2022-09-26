@@ -1,5 +1,8 @@
 package mods.thecomputerizer.theimpossiblelibrary.client.visual;
 
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.zakgof.velvetvideo.IDemuxer;
 import com.zakgof.velvetvideo.IVelvetVideoLib;
 import com.zakgof.velvetvideo.IVideoDecoderStream;
@@ -8,17 +11,15 @@ import com.zakgof.velvetvideo.impl.VelvetVideoLib;
 import mods.thecomputerizer.theimpossiblelibrary.Constants;
 import mods.thecomputerizer.theimpossiblelibrary.TheImpossibleLibrary;
 import mods.thecomputerizer.theimpossiblelibrary.common.Files;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.texture.TextureUtil;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.Identifier;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
 
 public class MP4 {
-    private final ResourceLocation source;
+    private final Identifier source;
     private final int glTextureId;
     private long milliStatus;
     private long milliCounter;
@@ -34,14 +35,14 @@ public class MP4 {
     private final File intermediary;
     private IVideoFrame curFrame;
 
-    public MP4(ResourceLocation location) throws IOException {
+    public MP4(Identifier location) throws IOException {
         this.source = location;
-        this.intermediary = new File(Constants.DATA_DIRECTORY,location.getResourceDomain() + "/" + location.getResourcePath());
+        this.intermediary = new File(Constants.DATA_DIRECTORY,location.getNamespace() + "/" + location.getPath());
         if(!this.intermediary.exists()) Files.generateNestedFile(this.intermediary);
-        FileUtils.copyInputStreamToFile(Minecraft.getMinecraft().mcDefaultResourcePack.getInputStream(location), this.intermediary);
+        FileUtils.copyInputStreamToFile(MinecraftClient.getInstance().getResourceManager().getResource(location).getInputStream(), this.intermediary);
         this.videoStream = getVideo(this.intermediary);
         this.curFrame = this.videoStream.nextFrame();
-        this.glTextureId = TextureUtil.glGenTextures();
+        this.glTextureId = GlStateManager._genTexture();
         this.intermediary.deleteOnExit();
     }
 
@@ -80,11 +81,10 @@ public class MP4 {
         return pass;
     }
 
-    public void loadCurrentFrame(boolean blur, boolean clamp) {
+    public void loadCurrentFrame() {
         try {
-            TextureUtil.deleteTexture(this.glTextureId);
-            TextureUtil.uploadTextureImageAllocate(this.glTextureId, this.curFrame.image(),blur,clamp);
-            GlStateManager.bindTexture(this.glTextureId);
+            TextureUtil.releaseTextureId(this.glTextureId);
+            RenderSystem.bindTexture(this.glTextureId);
         } catch (Exception e) {
             TheImpossibleLibrary.logError("Something went wrong when trying to render a frame of the gif at location "+this.source,e);
         }

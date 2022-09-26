@@ -1,16 +1,16 @@
 [
 {
   "modid": "theimpossiblelibrary",
-  "name": "The Impossible Library",
+  "name": "The Impossible Library Fabric",
   "description": "Makes the impossible possible",
-  "version": "1.12.2-0.4",
-  "mcversion": "1.12.2",
+  "version": "1.17.1-0.1",
+  "mcversion": "1.17.1",
   "url": "",
   "updateUrl": "",
-  "authorList": ["The_Computerizer"],
+  "authorList": ["Mysticpasta1"],
   "credits": "The_Computerizer",
   "logoFile": "",
   "screenshots": [],
-  "dependencies": ["mixinbooter"]
+  "dependencies": []
 }
 ]

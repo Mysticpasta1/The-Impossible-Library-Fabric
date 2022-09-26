@@ -1,7 +1,6 @@
 package mods.thecomputerizer.theimpossiblelibrary.mixin;
 
-import net.minecraft.util.SoundCategory;
-import net.minecraftforge.event.world.NoteBlockEvent;
+import net.minecraft.sound.SoundCategory;
 import org.spongepowered.asm.mixin.Mixin;
 
 @Mixin(SoundCategory.class)

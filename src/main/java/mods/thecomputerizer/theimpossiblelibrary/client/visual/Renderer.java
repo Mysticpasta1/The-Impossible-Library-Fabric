@@ -1,14 +1,14 @@
 package mods.thecomputerizer.theimpossiblelibrary.client.visual;
 
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
 import mods.thecomputerizer.theimpossiblelibrary.TheImpossibleLibrary;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.client.event.RenderGameOverlayEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vector4f;
+import org.lwjgl.opengl.GL11;
 
-import javax.vecmath.Vector4f;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -19,7 +19,7 @@ public class Renderer {
     private static final ArrayList<MP4> renderableMp4s = new ArrayList<>();
     private static final ArrayList<PNG> renderablePngs = new ArrayList<>();
 
-    public static PNG initializePng(ResourceLocation location) {
+    public static PNG initializePng(Identifier location) {
         try {
             return new PNG(location);
         } catch (IOException ex) {
@@ -28,7 +28,7 @@ public class Renderer {
         return null;
     }
 
-    public static MP4 initializeMp4(ResourceLocation location) {
+    public static MP4 initializeMp4(Identifier location) {
         try {
             return new MP4(location);
         } catch (IOException ex) {
@@ -37,7 +37,7 @@ public class Renderer {
         return null;
     }
 
-    public static GIF initializeGif(ResourceLocation location) {
+    public static GIF initializeGif(Identifier location) {
         try {
             return new GIF(location);
         } catch (IOException ex) {
@@ -121,40 +121,17 @@ public class Renderer {
         stopRenderingAllPngs();
     }
 
-    //Actual rendering methods
-    @SubscribeEvent
-    public static void renderAllBackgroundStuff(RenderGameOverlayEvent.Post e) {
-        if(e.getType()== RenderGameOverlayEvent.ElementType.ALL) {
-            ScaledResolution res = e.getResolution();
-            int x = res.getScaledWidth();
-            int y = res.getScaledHeight();
-            Vector4f color = new Vector4f(1, 1, 1, 1);
-            for(GIF gif : renderableGifs) renderGif(gif,color,x,y);
-            for(MP4 mp4 : renderableMp4s) renderMp4(mp4,color,x,y);
-            for(PNG png : renderablePngs) renderPng(png,color,x,y);
-            renderableGifs.removeIf(gif -> {
-                if(!gif.checkMilli((long)(50f*e.getPartialTicks())))
-                    gif.isFinished = true;
-                return gif.isFinished;
-            });
-            renderableMp4s.removeIf(mp4 -> {
-                if(!mp4.checkMilli((long)(50f*e.getPartialTicks())))
-                    mp4.isFinished = true;
-                return mp4.isFinished;
-            });
-        }
-    }
-
     public static void renderGif(GIF gif, Vector4f color, int resolutionX, int resolutionY) {
-        GlStateManager.enableBlend();
-        GlStateManager.pushMatrix();
-        gif.loadCurrentFrame(false,false);
-        GlStateManager.color(color.getX(), color.getY(), color.getZ(), 1f);
+        GlStateManager._enableBlend();
+        MatrixStack matrixStack = new MatrixStack();
+        matrixStack.push();
+        gif.loadCurrentFrame();
+        RenderSystem.setShaderColor(color.getX(), color.getY(), color.getZ(), 1f);
         float scaleX  = (0.25f*((float)resolutionY/(float)resolutionX))*gif.getScaleX();
         float scaleY = 0.25f*gif.getScaleY();
         if(gif.getWidthRatio()>=1f) scaleX*=gif.getWidthRatio();
         if(gif.getHeightRatio()>=1f) scaleY*=gif.getHeightRatio();
-        GlStateManager.scale(scaleX,scaleY,1f);
+        GL11.glScaled(scaleX, scaleY, 1f);
         int xOffset = 0;
         int yOffset = 0;
         if(gif.getHorizontal().matches("center")) xOffset = (int) ((resolutionX/2f)-((float)resolutionX*(scaleX/2f)));
@@ -163,21 +140,22 @@ public class Renderer {
         else if(gif.getVertical().matches("top")) yOffset = (int) (resolutionY-((float)resolutionY*(scaleY/2f)));
         float posX = (xOffset*(1/scaleX))+gif.getX();
         float posY = (yOffset*(1/scaleY))+gif.getY();
-        GuiScreen.drawModalRectWithCustomSizedTexture((int)posX,(int)posY,resolutionX,resolutionY,resolutionX,resolutionY,resolutionX,resolutionY);
-        GlStateManager.color(1F, 1F, 1F, 1);
-        GlStateManager.popMatrix();
+        Screen.drawTexture(matrixStack,(int)posX,(int)posY,resolutionX,resolutionY,resolutionX,resolutionY,resolutionX,resolutionY);
+        RenderSystem.setShaderColor(1F, 1F, 1F, 1);
+        matrixStack.pop();
     }
 
     public static void renderMp4(MP4 mp4, Vector4f color, int resolutionX, int resolutionY) {
-        GlStateManager.enableBlend();
-        GlStateManager.pushMatrix();
-        mp4.loadCurrentFrame(false,false);
-        GlStateManager.color(color.getX(), color.getY(), color.getZ(), 1f);
+        RenderSystem.enableBlend();
+        MatrixStack matrixStack = new MatrixStack();
+        matrixStack.push();
+        mp4.loadCurrentFrame();
+        RenderSystem.setShaderColor(color.getX(), color.getY(), color.getZ(), 1f);
         float scaleX  = (0.25f*((float)resolutionY/(float)resolutionX))*mp4.getScaleX();
         float scaleY = 0.25f*mp4.getScaleY();
         if(mp4.getWidthRatio()>=1f) scaleX*=mp4.getWidthRatio();
         if(mp4.getHeightRatio()>=1f) scaleY*=mp4.getHeightRatio();
-        GlStateManager.scale(scaleX,scaleY,1f);
+        GL11.glScaled(scaleX,scaleY,1f);
         int xOffset = 0;
         int yOffset = 0;
         if(mp4.getHorizontal().matches("center")) xOffset = (int) ((resolutionX/2f)-((float)resolutionX*(scaleX/2f)));
@@ -186,19 +164,20 @@ public class Renderer {
         else if(mp4.getVertical().matches("top")) yOffset = (int) (resolutionY-((float)resolutionY*(scaleY/2f)));
         float posX = (xOffset*(1/scaleX))+mp4.getX();
         float posY = (yOffset*(1/scaleY))+mp4.getY();
-        GuiScreen.drawModalRectWithCustomSizedTexture((int)posX,(int)posY,resolutionX,resolutionY,resolutionX,resolutionY,resolutionX,resolutionY);
-        GlStateManager.color(1F, 1F, 1F, 1);
-        GlStateManager.popMatrix();
+        Screen.drawTexture(matrixStack, (int)posX,(int)posY,resolutionX,resolutionY,resolutionX,resolutionY,resolutionX,resolutionY);
+        RenderSystem.setShaderColor(1F, 1F, 1F, 1);
+        matrixStack.pop();
     }
 
     public static void renderPng(PNG png, Vector4f color, int resolutionX, int resolutionY) {
-        GlStateManager.enableBlend();
-        GlStateManager.pushMatrix();
+        RenderSystem.enableBlend();
+        MatrixStack matrixStack = new MatrixStack();
+        matrixStack.push();
         png.loadToManager();
-        GlStateManager.color(color.getX(), color.getY(), color.getZ(), 1f);
+        RenderSystem.setShaderColor(color.getX(), color.getY(), color.getZ(), 1f);
         float scaleX  = (0.25f*((float)resolutionY/(float)resolutionX))*png.getScaleX();
         float scaleY = 0.25f*png.getScaleY();
-        GlStateManager.scale(scaleX,scaleY,1f);
+        GL11.glScaled(scaleX,scaleY,1f);
         int xOffset = 0;
         int yOffset = 0;
         if(png.getHorizontal().matches("center")) xOffset = (int) ((resolutionX/2f)-((float)resolutionX*(scaleX/2f)));
@@ -207,8 +186,8 @@ public class Renderer {
         else if(png.getVertical().matches("top")) yOffset = (int) (resolutionY-((float)resolutionY*(scaleY/2f)));
         float posX = (xOffset*(1/scaleX))+png.getX();
         float posY = (yOffset*(1/scaleY))+png.getY();
-        GuiScreen.drawModalRectWithCustomSizedTexture((int)posX,(int)posY,resolutionX,resolutionY,resolutionX,resolutionY,resolutionX,resolutionY);
-        GlStateManager.color(1F, 1F, 1F, 1);
-        GlStateManager.popMatrix();
+        Screen.drawTexture(matrixStack, (int)posX,(int)posY,resolutionX,resolutionY,resolutionX,resolutionY,resolutionX,resolutionY);
+        RenderSystem.setShaderColor(1F, 1F, 1F, 1);
+        matrixStack.pop();
     }
 }

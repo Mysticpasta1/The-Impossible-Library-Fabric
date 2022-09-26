@@ -1,13 +1,16 @@
 package mods.thecomputerizer.theimpossiblelibrary.client.visual;
 
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.sksamuel.scrimage.nio.AnimatedGif;
 import com.sksamuel.scrimage.nio.AnimatedGifReader;
 import com.sksamuel.scrimage.nio.ImageSource;
 import mods.thecomputerizer.theimpossiblelibrary.TheImpossibleLibrary;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.texture.TextureUtil;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.Identifier;
 
 import java.io.IOException;
 
@@ -15,7 +18,7 @@ public class GIF {
 
     private final AnimatedGif status;
     private final long delay;
-    private final ResourceLocation source;
+    private final Identifier source;
     private final int glTextureId;
     private long milliCounter;
     private int frame;
@@ -29,8 +32,8 @@ public class GIF {
     private long millis;
     public boolean isFinished;
 
-    public GIF(ResourceLocation location) throws IOException {
-        this.status = AnimatedGifReader.read(ImageSource.of(Minecraft.getMinecraft().mcDefaultResourcePack.getInputStream(location)));
+    public GIF(Identifier location) throws IOException {
+        this.status = AnimatedGifReader.read(ImageSource.of(MinecraftClient.getInstance().getResourceManager().getResource(location).getInputStream()));
         this.delay = this.status.getDelay(0).toMillis();
         this.frame = 0;
         this.milliStatus = 0;
@@ -38,7 +41,7 @@ public class GIF {
         this.scaleY = 1f;
         this.isFinished = false;
         this.source = location;
-        this.glTextureId = TextureUtil.glGenTextures();
+        this.glTextureId = TextureUtil.generateTextureId();
     }
 
     public boolean checkMilli(long millis) {
@@ -61,11 +64,10 @@ public class GIF {
         return this.milliStatus<=this.millis;
     }
 
-    public void loadCurrentFrame(boolean blur, boolean clamp) {
+    public void loadCurrentFrame() {
         try {
-            TextureUtil.deleteTexture(this.glTextureId);
-            TextureUtil.uploadTextureImageAllocate(this.glTextureId,this.status.getFrame(this.frame).awt(),blur,clamp);
-            GlStateManager.bindTexture(this.glTextureId);
+            TextureUtil.releaseTextureId(this.glTextureId);
+            RenderSystem.bindTexture(this.glTextureId);
         } catch (Exception e) {
             TheImpossibleLibrary.logError("Something went wrong when trying to render a frame of the gif at location "+this.source,e);
         }
